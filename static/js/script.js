@@ -1,30 +1,35 @@
-// script.js
-const form = document.getElementById("download-form");
-const downloadLink = document.getElementById("download-link");
+document.getElementById("downloadForm").addEventListener("submit", function(event) {
+    event.preventDefault();
 
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();  // Empêche le rechargement de la page
+    const urlInput = document.getElementById("url");
+    const url = urlInput.value;
 
-    const url = document.getElementById("url").value;
-    const formData = new FormData();
-    formData.append("url", url);
-
-    try {
-        // Envoyer la requête pour obtenir le lien direct
-        const response = await fetch("/", {
-            method: "POST",
-            body: formData
-        });
-        
-        const data = await response.json();
-        if (data.download_url) {
-            downloadLink.href = data.download_url;  // Définit le lien de téléchargement direct
-            downloadLink.style.display = "block";  // Rendre le lien visible
+    fetch("/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({ url: url })
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.blob();
         } else {
-            alert("Erreur lors de la récupération du lien de téléchargement.");
+            throw new Error("Erreur lors du téléchargement de la vidéo");
         }
-    } catch (error) {
-        console.error("Erreur:", error);
+    })
+    .then(blob => {
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = "video.mp4";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(downloadUrl);
+    })
+    .catch(error => {
+        console.error("Erreur :", error);
         alert("Une erreur est survenue lors de la récupération du lien.");
-    }
+    });
 });

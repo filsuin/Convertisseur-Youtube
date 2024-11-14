@@ -1,45 +1,60 @@
 # external_download.py
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file, after_this_request
 import yt_dlp
+import os
 
 app = Flask(__name__)
+DOWNLOAD_FOLDER = "downloads"  # Dossier pour stocker temporairement les vidéos
 
-# Fonction pour obtenir le lien direct de téléchargement
-def get_video_url(url):
+# Assurez-vous que le dossier de téléchargement existe
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+# Fonction pour télécharger la vidéo et obtenir son chemin
+def download_video(url):
     ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',  # Sélectionner la meilleure qualité vidéo et audio
-        'noplaylist': True  # Ne pas télécharger de playlists
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  # Spécifie le chemin et le nom du fichier
+        'noplaylist': True,
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4'
+        }]
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
-            info_dict = ydl.extract_info(url, download=False)  # Obtenir les informations sans télécharger
-            # Vérifier si le lien direct est disponible
-            if 'url' in info_dict and info_dict.get('ext') in ['mp4', 'mkv', 'webm']:
-                return info_dict['url']
-            # Sinon, parcourir les formats pour trouver une URL vidéo
-            elif 'formats' in info_dict:
-                for format in info_dict['formats']:
-                    # Sélectionner uniquement les formats vidéo
-                    if 'url' in format and format.get('vcodec') != 'none' and format.get('ext') in ['mp4', 'mkv', 'webm']:
-                        return format['url']
+            info_dict = ydl.extract_info(url, download=True)  # Télécharge la vidéo
+            video_title = info_dict.get('title', 'video')  # Récupère le titre pour nommer le fichier
+            file_path = os.path.join(DOWNLOAD_FOLDER, f"{video_title}.mp4")
+            if os.path.exists(file_path):
+                return file_path  # Retourne le chemin du fichier téléchargé
             else:
-                return None  # Aucun lien vidéo trouvé
+                return None
         except Exception as e:
-            print(f"Erreur lors de la récupération du lien : {e}")
+            print(f"Erreur lors du téléchargement de la vidéo : {e}")
             return None
 
-# Route pour traiter la requête de téléchargement
+# Route pour gérer la requête de téléchargement
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         url = request.form.get("url")
         if url:
-            # Obtenir le lien direct de téléchargement
-            download_url = get_video_url(url)
-            if download_url:
-                return jsonify({'download_url': download_url})  # Retourner le lien au client
+            # Télécharger la vidéo et obtenir le chemin du fichier
+            file_path = download_video(url)
+            if file_path:
+                # Définir un nettoyage après l'envoi du fichier
+                @after_this_request
+                def remove_file(response):
+                    try:
+                        os.remove(file_path)
+                    except Exception as e:
+                        print(f"Erreur lors de la suppression du fichier : {e}")
+                    return response
+                
+                # Envoie du fichier au client pour téléchargement
+                return send_file(file_path, as_attachment=True)
             else:
-                return jsonify({'error': 'Impossible de récupérer le lien de téléchargement.'}), 500
+                return jsonify({'error': 'Impossible de télécharger la vidéo.'}), 500
     return render_template("index.html")
 
 # Exécution du serveur
