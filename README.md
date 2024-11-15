@@ -12,7 +12,7 @@ Before you can use these scripts, make sure you have the following installed on 
 
 ## Installation
 
-1. **Clone this repository** (if applicable) or download the scripts `download_video.py` and `app.py`.
+1. **Clone this repository** (if applicable) or download the scripts `local_download.py` and `external_dowload.py`.
 
 2. **Install required libraries**:
     ```bash
@@ -44,21 +44,6 @@ Before you can use these scripts, make sure you have the following installed on 
 3. **Enter the YouTube video URL**:
     In the web interface, enter the URL of the YouTube video you want to download and click the submit button. The video will be downloaded and you will be prompted to save the file.
 
-## Example Codes
-
-### Command Line Script: `download_video.py`
-
-```python
-# -*- coding: utf-8 -*-
-import yt_dlp
-
-def download_video(url):
-    ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',  # Download the best video and audio quality
-        'outtmpl': '%(title)s.%(ext)s'  # Output file name template
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
 
 # Example usage
 if __name__ == "__main__":
