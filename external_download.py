@@ -1,60 +1,33 @@
-# external_download.py
-from flask import Flask, render_template, request, jsonify, send_file, after_this_request
+from flask import Flask, render_template, request, send_file
 import yt_dlp
 import os
 
 app = Flask(__name__)
-DOWNLOAD_FOLDER = "downloads"  # Dossier pour stocker temporairement les vidéos
 
-# Assurez-vous que le dossier de téléchargement existe
-os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
-
-# Fonction pour télécharger la vidéo et obtenir son chemin
-def download_video(url):
+# Fonction de téléchargement de la vidéo
+def download_video(url, output_path):
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  # Spécifie le chemin et le nom du fichier
-        'noplaylist': True,
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4'
-        }]
+        'format': 'bestvideo+bestaudio/best',  # Télécharge la meilleure qualité vidéo et audio
+        'outtmpl': output_path  # Nom du fichier de sortie
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info_dict = ydl.extract_info(url, download=True)  # Télécharge la vidéo
-            video_title = info_dict.get('title', 'video')  # Récupère le titre pour nommer le fichier
-            file_path = os.path.join(DOWNLOAD_FOLDER, f"{video_title}.mp4")
-            if os.path.exists(file_path):
-                return file_path  # Retourne le chemin du fichier téléchargé
-            else:
-                return None
-        except Exception as e:
-            print(f"Erreur lors du téléchargement de la vidéo : {e}")
-            return None
+        result = ydl.extract_info(url, download=True)
+        video_filename = ydl.prepare_filename(result)  # Le chemin réel du fichier téléchargé
+    return video_filename
 
-# Route pour gérer la requête de téléchargement
+# Page d'accueil avec le formulaire
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        url = request.form.get("url")
+        url = request.form.get("url")  # Récupère l'URL de la vidéo depuis le formulaire
         if url:
-            # Télécharger la vidéo et obtenir le chemin du fichier
-            file_path = download_video(url)
-            if file_path:
-                # Définir un nettoyage après l'envoi du fichier
-                @after_this_request
-                def remove_file(response):
-                    try:
-                        os.remove(file_path)
-                    except Exception as e:
-                        print(f"Erreur lors de la suppression du fichier : {e}")
-                    return response
-                
-                # Envoie du fichier au client pour téléchargement
-                return send_file(file_path, as_attachment=True)
-            else:
-                return jsonify({'error': 'Impossible de télécharger la vidéo.'}), 500
+            # Définir le chemin de sortie du fichier téléchargé
+            if not os.path.exists("downloads"):
+                os.makedirs("downloads")  # Créer le dossier downloads si nécessaire
+
+            output_path = "downloads/%(title)s.%(ext)s"
+            downloaded_file = download_video(url, output_path)
+            return send_file(downloaded_file, as_attachment=True)
     return render_template("index.html")
 
 # Exécution du serveur
