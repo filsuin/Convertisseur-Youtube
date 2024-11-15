@@ -25,7 +25,7 @@ Before you can use these scripts, make sure you have the following installed on 
 
 1. **Run the script**:
     ```bash
-    python download_video.py
+    python local_download.py
     ```
 
 2. **Enter the YouTube video URL**:
@@ -35,7 +35,7 @@ Before you can use these scripts, make sure you have the following installed on 
 
 1. **Run the Flask app**:
     ```bash
-    python app.py
+    python external_dowload.py
     ```
 
 2. **Open your web browser**:
