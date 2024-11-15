@@ -44,8 +44,3 @@ Before you can use these scripts, make sure you have the following installed on 
 3. **Enter the YouTube video URL**:
     In the web interface, enter the URL of the YouTube video you want to download and click the submit button. The video will be downloaded and you will be prompted to save the file.
 
-
-# Example usage
-if __name__ == "__main__":
-    video_url = input("Enter the YouTube video URL: ")
-    download_video(video_url)
