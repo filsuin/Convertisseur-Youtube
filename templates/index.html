@@ -12,11 +12,22 @@
         <form id="download-form">
             <label for="url">URL de la vidéo :</label>
             <input type="text" name="url" id="url" placeholder="Entrez l'URL de la vidéo" required>
-            <button type="submit">Obtenir le lien de téléchargement</button>
+            
+            <!-- Boutons de choix de format -->
+            <div class="format-buttons">
+                <button type="button" class="format-button active" id="format-mp4">MP4</button>
+                <button type="button" class="format-button" id="format-mp3">MP3</button>
+            </div>
+
+            <input type="hidden" name="format" id="format-input" value="mp4">
+
+            <button type="submit" id="download-btn">Obtenir le lien de téléchargement</button>
         </form>
+
         <div id="progress-container">
             <div id="progress-bar"></div>
         </div>
+
         <a id="download-link" style="display:none;" href="#" download>Cliquer ici pour télécharger</a>
     </div>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
