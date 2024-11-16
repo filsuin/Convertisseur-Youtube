@@ -1,5 +1,4 @@
-# external_download.py
-from flask import Flask, render_template, request, jsonify, send_file, after_this_request
+from flask import Flask, render_template, request, send_file, jsonify, after_this_request
 import yt_dlp
 import os
 

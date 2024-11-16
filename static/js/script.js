@@ -15,34 +15,54 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Gestion de la soumission du formulaire
-    document.getElementById("download-form").addEventListener("submit", function (event) {
-        event.preventDefault();
+    // Gestion du formulaire et de la barre de progression
+    const form = document.getElementById("download-form");
+    const progressContainer = document.getElementById("progress-container");
+    const progressBar = document.getElementById("progress-bar");
 
-        const formData = new FormData(this);
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault(); // Empêche le rechargement de la page
+        const formData = new FormData(form);
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
 
-        fetch("/", {
-            method: "POST",
-            body: formData
-        })
-        .then(response => {
+        // Envoie de la requête avec un suivi de progression
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: formData
+            });
+
             if (response.ok) {
-                return response.blob();
+                let downloadProgress = 0;
+
+                // Simule la progression du téléchargement
+                const downloadInterval = setInterval(() => {
+                    downloadProgress += 10;
+                    progressBar.style.width = downloadProgress + "%";
+
+                    if (downloadProgress >= 100) {
+                        clearInterval(downloadInterval);
+                        progressBar.style.width = "100%";
+                    }
+                }, 500);
+
+                // Télécharge le fichier une fois le téléchargement terminé
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `video.${selectedFormat}`; // Utilise le format choisi pour le nom du fichier
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
             } else {
-                throw new Error("Erreur lors du téléchargement.");
+                alert("Échec du téléchargement.");
             }
-        })
-        .then(blob => {
-            const downloadUrl = URL.createObjectURL(blob);
-            const a = document.getElementById("download-link");
-            a.style.display = "block";
-            a.href = downloadUrl;
-            a.download = `video.${selectedFormat}`;
-            a.click();
-        })
-        .catch(error => {
-            console.error("Erreur :", error);
-            alert("Une erreur est survenue lors du téléchargement.");
-        });
+        } catch (error) {
+            console.error("Erreur:", error);
+            alert("Erreur lors du téléchargement.");
+        }
     });
 });
