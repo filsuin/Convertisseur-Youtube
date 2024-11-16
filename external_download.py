@@ -13,7 +13,7 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 def download_file(url, format_choice):
     ydl_opts = {
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if format_choice == 'mp4' else 'bestaudio/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  # Spécifie le chemin et le nom du fichier
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  # Spécifie le chemin et le nom du fichier avec le titre de la vidéo
         'noplaylist': True,
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
@@ -24,7 +24,7 @@ def download_file(url, format_choice):
         try:
             info_dict = ydl.extract_info(url, download=True)
             file_ext = 'mp3' if format_choice == 'mp3' else 'mp4'
-            file_title = info_dict.get('title', 'file')
+            file_title = info_dict.get('title', 'file').replace("/", "_")  # Remplace les caractères interdits dans le nom du fichier
             file_path = os.path.join(DOWNLOAD_FOLDER, f"{file_title}.{file_ext}")
             if os.path.exists(file_path):
                 return file_path
@@ -52,7 +52,7 @@ def index():
                         print(f"Erreur lors de la suppression du fichier : {e}")
                     return response
                 
-                return send_file(file_path, as_attachment=True)
+                return send_file(file_path, as_attachment=True, download_name=os.path.basename(file_path))
             else:
                 return jsonify({'error': 'Impossible de télécharger le fichier.'}), 500
 
