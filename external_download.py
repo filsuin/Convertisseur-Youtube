@@ -1,35 +1,61 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, jsonify, after_this_request
 import yt_dlp
 import os
 
 app = Flask(__name__)
+DOWNLOAD_FOLDER = "downloads"  # Dossier pour stocker temporairement les fichiers
 
-# Fonction de téléchargement de la vidéo
-def download_video(url, output_path):
+# Assurez-vous que le dossier de téléchargement existe
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+# Fonction pour télécharger la vidéo ou l'audio
+def download_file(url, format_choice):
     ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',  # Télécharge la meilleure qualité vidéo et audio
-        'outtmpl': output_path  # Nom du fichier de sortie
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if format_choice == 'mp4' else 'bestaudio/best',
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  # Spécifie le chemin et le nom du fichier avec le titre de la vidéo
+        'noplaylist': True,
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': format_choice
+        }] if format_choice == 'mp3' else None
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        result = ydl.extract_info(url, download=True)
-        video_filename = ydl.prepare_filename(result)  # Le chemin réel du fichier téléchargé
-    return video_filename
+        try:
+            info_dict = ydl.extract_info(url, download=True)
+            file_ext = 'mp3' if format_choice == 'mp3' else 'mp4'
+            file_title = info_dict.get('title', 'file').replace("/", "_")  # Remplace les caractères interdits dans le nom du fichier
+            file_path = os.path.join(DOWNLOAD_FOLDER, f"{file_title}.{file_ext}")
+            if os.path.exists(file_path):
+                return file_path
+            else:
+                return None
+        except Exception as e:
+            print(f"Erreur lors du téléchargement : {e}")
+            return None
 
-# Page d'accueil avec le formulaire
+# Route principale
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        url = request.form.get("url")  # Récupère l'URL de la vidéo depuis le formulaire
-        if url:
-            # Définir le chemin de sortie du fichier téléchargé
-            if not os.path.exists("downloads"):
-                os.makedirs("downloads")  # Créer le dossier downloads si nécessaire
+        url = request.form.get("url")
+        format_choice = request.form.get("format", "mp4")  # MP4 par défaut
 
-            output_path = "downloads/%(title)s.%(ext)s"
-            downloaded_file = download_video(url, output_path)
-            return send_file(downloaded_file, as_attachment=True)
+        if url:
+            file_path = download_file(url, format_choice)
+            if file_path:
+                @after_this_request
+                def remove_file(response):
+                    try:
+                        os.remove(file_path)
+                    except Exception as e:
+                        print(f"Erreur lors de la suppression du fichier : {e}")
+                    return response
+                
+                return send_file(file_path, as_attachment=True, download_name=os.path.basename(file_path))
+            else:
+                return jsonify({'error': 'Impossible de télécharger le fichier.'}), 500
+
     return render_template("index.html")
 
-# Exécution du serveur
 if __name__ == "__main__":
     app.run(debug=True)
