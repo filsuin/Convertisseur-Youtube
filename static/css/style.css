@@ -26,14 +26,10 @@ h1 {
     margin-bottom: 1rem;
 }
 
-label, input, button {
-    width: 100%;
-    font-size: 1.1rem;
-}
-
 label {
     display: block;
     margin-bottom: 0.5rem;
+    font-size: 1.1rem;
 }
 
 input[type="text"] {
@@ -41,21 +37,33 @@ input[type="text"] {
     border: none;
     border-radius: 5px;
     margin-bottom: 1rem;
+    width: 100%;
+    font-size: 1.1rem;
 }
 
-button {
+/* Boutons de format */
+.format-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 1.5rem;
+}
+
+.format-button {
     background-color: #4CAF50;
     color: white;
     border: none;
-    padding: 0.7rem;
+    padding: 0.8rem 2rem;
     border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.3s ease;
+    font-size: 1.1rem;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-button:hover {
-    background-color: #45a049;
+/* Bouton actif (foncé) */
+.format-button.active {
+    background-color: #3a923e; /* Teinte plus sombre */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
 /* Barre de progression */
@@ -74,13 +82,46 @@ button:hover {
     border-radius: 5px;
 }
 
+/* Bouton principal */
+button[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.7rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: background-color 0.3s ease;
+    width: 100%;
+}
+
+button[type="submit"]:hover {
+    background-color: #45a049;
+}
+
 /* Texte responsive */
 @media (max-width: 768px) {
-    h1 { font-size: 1.8rem; }
-    label, input, button { font-size: 1rem; }
+    h1 {
+        font-size: 1.8rem;
+    }
+    label, input, button {
+        font-size: 1rem;
+    }
+    .format-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
 }
 
 @media (max-width: 480px) {
-    h1 { font-size: 1.5rem; }
-    label, input, button { font-size: 0.9rem; }
+    h1 {
+        font-size: 1.5rem;
+    }
+    label, input, button {
+        font-size: 0.9rem;
+    }
+    .format-button {
+        padding: 0.6rem 1.5rem;
+    }
 }
