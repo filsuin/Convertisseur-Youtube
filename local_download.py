@@ -2,6 +2,8 @@
 import yt_dlp
 import re
 import os
+import tkinter as tk
+from tkinter import messagebox
 
 def download_media(url, format_choice):
     # Définir le chemin du dossier de sortie
@@ -24,7 +26,7 @@ def download_media(url, format_choice):
             }]
         }
     else:
-        print("Format non supporté. Veuillez choisir 'mp4' ou 'mp3'.")
+        messagebox.showerror("Erreur", "Format non supporté. Veuillez choisir 'mp4' ou 'mp3'.")
         return
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -37,20 +39,49 @@ def is_valid_url(url):
     )
     return re.match(youtube_regex, url) is not None
 
-if __name__ == "__main__":
-    while True:
-        video_url = input("Entrez l'URL de la vidéo YouTube : ")
-        if is_valid_url(video_url):
-            break
-        else:
-            print("URL invalide. Veuillez entrer une URL YouTube valide.")
+def on_download_button_click():
+    video_url = url_entry.get()
+    format_choice = format_var.get()
 
-    while True:
-        format_choice = input("Voulez-vous télécharger en format mp3 ou mp4 ? ").lower()
-        if format_choice in ['mp3', 'mp4']:
-            break
-        else:
-            print("Format invalide. Veuillez entrer 'mp3' ou 'mp4'.")
+    if not is_valid_url(video_url):
+        messagebox.showerror("Erreur", "URL invalide. Veuillez entrer une URL YouTube valide.")
+        return
+
+    if format_choice not in ['mp3', 'mp4']:
+        messagebox.showerror("Erreur", "Format invalide. Veuillez choisir 'mp3' ou 'mp4'.")
+        return
 
     download_media(video_url, format_choice)
-    print(f"Le fichier a été téléchargé dans le dossier : {os.path.abspath('downloads')}")
+    messagebox.showinfo("Succès", f"Le fichier a été téléchargé dans le dossier : {os.path.abspath('downloads')}")
+
+# Création de la fenêtre principale
+root = tk.Tk()
+root.title("Téléchargeur YouTube")
+
+# Label pour l'URL
+url_label = tk.Label(root, text="Entrez l'URL de la vidéo YouTube :")
+url_label.pack(pady=5)
+
+# Champ de saisie pour l'URL
+url_entry = tk.Entry(root, width=50)
+url_entry.pack(pady=5)
+
+# Label pour le choix du format
+format_label = tk.Label(root, text="Choisissez le format (mp3 ou mp4) :")
+format_label.pack(pady=5)
+
+# Variable pour le format choisi
+format_var = tk.StringVar(value="mp4")
+
+# Radiobuttons pour choisir entre mp3 ou mp4
+mp3_button = tk.Radiobutton(root, text="MP3", variable=format_var, value="mp3")
+mp3_button.pack(pady=5)
+mp4_button = tk.Radiobutton(root, text="MP4", variable=format_var, value="mp4")
+mp4_button.pack(pady=5)
+
+# Bouton pour lancer le téléchargement
+download_button = tk.Button(root, text="Télécharger", command=on_download_button_click)
+download_button.pack(pady=20)
+
+# Lancer l'application Tkinter
+root.mainloop()
