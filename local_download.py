@@ -122,7 +122,7 @@ def on_download_button_click():
 
 # Création de la fenêtre principale
 root = tk.Tk()
-root.title("Téléchargeur YouTube avec Recherche Instantanée")
+root.title("Téléchargeur YouTube")
 
 # Section Recherche
 search_frame = tk.Frame(root)
