@@ -22,27 +22,27 @@ def search_youtube(query):
             videos.append((title, f"https://www.youtube.com/watch?v={video_id}"))
         return videos
     else:
-        messagebox.showerror("Erreur", "Impossible de récupérer les résultats de recherche.")
         return []
 
-def on_search_button_click():
-    """Effectuer une recherche et afficher les résultats"""
+def update_suggestions(event):
+    """Met à jour les suggestions en fonction de la saisie"""
     query = search_entry.get()
-    if not query:
-        messagebox.showerror("Erreur", "Veuillez entrer une recherche.")
+    if not query.strip():  # Si la barre est vide, vider les suggestions
+        search_results.delete(0, END)
         return
     
-    search_results.delete(0, END)  # Clear previous results
     videos = search_youtube(query)
+    search_results.delete(0, END)  # Efface les anciennes suggestions
     for title, url in videos:
         search_results.insert(END, f"{title} - {url}")
 
 def on_result_select(event):
     """Préremplit le champ URL avec le lien sélectionné dans les résultats"""
-    selected_item = search_results.get(search_results.curselection())
-    video_url = selected_item.split(" - ")[-1]
-    url_entry.delete(0, END)
-    url_entry.insert(0, video_url)
+    if search_results.curselection():
+        selected_item = search_results.get(search_results.curselection())
+        video_url = selected_item.split(" - ")[-1]
+        url_entry.delete(0, END)
+        url_entry.insert(0, video_url)
 
 def download_media(url, format_choice):
     # Définir le chemin du dossier de sortie
@@ -95,7 +95,7 @@ def on_download_button_click():
 
 # Création de la fenêtre principale
 root = tk.Tk()
-root.title("Téléchargeur YouTube avec Recherche")
+root.title("Téléchargeur YouTube avec Recherche Instantanée")
 
 # Section Recherche
 search_frame = tk.Frame(root)
@@ -107,8 +107,8 @@ search_label.pack(side=tk.LEFT, padx=5)
 search_entry = tk.Entry(search_frame, width=40)
 search_entry.pack(side=tk.LEFT, padx=5)
 
-search_button = tk.Button(search_frame, text="Rechercher", command=on_search_button_click)
-search_button.pack(side=tk.LEFT, padx=5)
+# Lier l'événement de frappe à la fonction de mise à jour
+search_entry.bind("<KeyRelease>", update_suggestions)
 
 # Liste des résultats de recherche
 results_frame = tk.Frame(root)
