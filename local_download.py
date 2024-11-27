@@ -3,12 +3,12 @@ import yt_dlp
 import re
 import os
 import tkinter as tk
-from tkinter import messagebox, Listbox, Scrollbar, END
+from tkinter import messagebox, Listbox, Scrollbar, END, ttk
 import requests
 import threading
 
 # Remplacez par votre clé API YouTube
-API_KEY = "YOUR API KEY"
+API_KEY = "AIzaSyCIcIEKn4zLObxDjW9sgvY8xjc24knZ3GQ"
 
 # Cache pour les résultats
 cache = {}
@@ -70,6 +70,21 @@ def on_result_select(event):
         url_entry.delete(0, END)
         url_entry.insert(0, video_url)
 
+def progress_hook(d):
+    """Met à jour la barre de progression en fonction de l'état."""
+    if d['status'] == 'downloading':
+        total = d.get('total_bytes', 0) or d.get('total_bytes_estimate', 0)
+        downloaded = d.get('downloaded_bytes', 0)
+        if total > 0:
+            progress_value = int(downloaded / total * 100)
+            progress_bar['value'] = progress_value
+            progress_label.config(text=f"Téléchargement : {progress_value}%")
+            root.update_idletasks()
+    elif d['status'] == 'finished':
+        progress_bar['value'] = 100
+        progress_label.config(text="Téléchargement terminé.")
+        root.update_idletasks()
+
 def download_media(url, format_choice):
     """Télécharge le média YouTube au format spécifié."""
     output_folder = os.path.join(os.getcwd(), "downloads")
@@ -77,18 +92,20 @@ def download_media(url, format_choice):
 
     if format_choice.lower() == 'mp4':
         ydl_opts = {
-            'format': 'bestvideo+bestaudio/best',  # Télécharge la meilleure qualité vidéo et audio
-            'outtmpl': os.path.join(output_folder, '%(title)s.%(ext)s')  # Nom du fichier de sortie
+            'format': 'bestvideo+bestaudio/best',
+            'outtmpl': os.path.join(output_folder, '%(title)s.%(ext)s'),
+            'progress_hooks': [progress_hook]
         }
     elif format_choice.lower() == 'mp3':
         ydl_opts = {
-            'format': 'bestaudio/best',  # Télécharge la meilleure qualité audio
-            'outtmpl': os.path.join(output_folder, '%(title)s.%(ext)s'),  # Nom du fichier de sortie
+            'format': 'bestaudio/best',
+            'outtmpl': os.path.join(output_folder, '%(title)s.%(ext)s'),
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
-            }]
+            }],
+            'progress_hooks': [progress_hook]
         }
     else:
         messagebox.showerror("Erreur", "Format non supporté. Veuillez choisir 'mp4' ou 'mp3'.")
@@ -117,8 +134,12 @@ def on_download_button_click():
         messagebox.showerror("Erreur", "Format invalide. Veuillez choisir 'mp3' ou 'mp4'.")
         return
 
-    download_media(video_url, format_choice)
-    messagebox.showinfo("Succès", f"Le fichier a été téléchargé dans le dossier : {os.path.abspath('downloads')}")
+    # Réinitialiser la barre de progression
+    progress_bar['value'] = 0
+    progress_label.config(text="Téléchargement : 0%")
+
+    # Lancer le téléchargement dans un thread séparé
+    threading.Thread(target=download_media, args=(video_url, format_choice), daemon=True).start()
 
 # Création de la fenêtre principale
 root = tk.Tk()
@@ -134,7 +155,6 @@ search_label.pack(side=tk.LEFT, padx=5)
 search_entry = tk.Entry(search_frame, width=40)
 search_entry.pack(side=tk.LEFT, padx=5)
 
-# Lier l'événement de frappe à la fonction de mise à jour
 search_entry.bind("<KeyRelease>", update_suggestions)
 
 # Liste des résultats de recherche
@@ -169,6 +189,13 @@ mp4_button.pack(pady=5)
 
 download_button = tk.Button(root, text="Télécharger", command=on_download_button_click)
 download_button.pack(pady=20)
+
+# Barre de progression
+progress_bar = ttk.Progressbar(root, orient="horizontal", length=400, mode="determinate")
+progress_bar.pack(pady=5)
+
+progress_label = tk.Label(root, text="Téléchargement : 0%")
+progress_label.pack(pady=5)
 
 # Lancer l'application Tkinter
 root.mainloop()
