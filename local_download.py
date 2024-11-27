@@ -8,7 +8,7 @@ import requests
 import threading
 
 # Remplacez par votre clé API YouTube
-API_KEY = "AIzaSyCIcIEKn4zLObxDjW9sgvY8xjc24knZ3GQ"
+API_KEY = ""
 
 # Cache pour les résultats
 cache = {}
