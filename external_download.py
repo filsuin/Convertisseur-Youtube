@@ -10,28 +10,37 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 # Fonction pour télécharger la vidéo ou l'audio
 def download_file(url, format_choice):
+    # Assurez-vous que le format demandé est valide
+    if format_choice not in ["mp4", "mp3"]:
+        return None
+
+    # Options pour yt_dlp
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if format_choice == 'mp4' else 'bestaudio/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  # Spécifie le chemin et le nom du fichier avec le titre de la vidéo
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+        if format_choice == 'mp4' else 'bestaudio/best',
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),  # Chemin du fichier
         'noplaylist': True,
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': format_choice
-        }] if format_choice == 'mp3' else None
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
+
+    # Ajout d'un postprocessor seulement pour MP3
+    if format_choice == 'mp3':
+        ydl_opts['postprocessors'] = [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192'
+        }]
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
             file_ext = 'mp3' if format_choice == 'mp3' else 'mp4'
-            file_title = info_dict.get('title', 'file').replace("/", "_")  # Remplace les caractères interdits dans le nom du fichier
+            file_title = info_dict.get('title', 'file').replace("/", "_").replace("\\", "_")
             file_path = os.path.join(DOWNLOAD_FOLDER, f"{file_title}.{file_ext}")
-            if os.path.exists(file_path):
-                return file_path
-            else:
-                return None
-        except Exception as e:
-            print(f"Erreur lors du téléchargement : {e}")
-            return None
+            return file_path if os.path.exists(file_path) else None
+    except Exception as e:
+        print(f"Erreur lors du téléchargement : {e}")
+        return None
+
 
 # Route principale
 @app.route("/", methods=["GET", "POST"])
